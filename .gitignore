@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtualenv
+venv/
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# FAISS Indexes and Chunks
+*.faiss
+*.jsonl
+
+# IDE
+.vscode/
+.idea/
+
+# PostgreSQL dump files
+*.sql
+
+# dotenv secrets
+.env
+*.env
+
+# Railway generated local files
+railway.json
+
+# Pytest cache
+.pytest_cache/
