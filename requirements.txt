@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-dotenv
+pdfplumber
+python-docx
+faiss-cpu
+google-generativeai
+requests
+
+
