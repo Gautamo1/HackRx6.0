@@ -156,5 +156,3 @@ https://web-production-609b0.up.railway.app/hackrx/run
 * **Name:** Gautam
 * **Email:** [your.kumargautam802108@gmail.com]
 * **GitHub:** [github.com/Gautamo1]
-
-\

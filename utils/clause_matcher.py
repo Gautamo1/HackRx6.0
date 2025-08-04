@@ -33,3 +33,4 @@ def extract_relevant_clauses(query: str, context_chunks: list, top_k: int = 5) -
     top_clauses = [clause_texts[i] for i in top_indices]
 
     return top_clauses
+

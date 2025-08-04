@@ -1,40 +1,28 @@
-import os
-import psycopg2
-import json
+import google.generativeai as genai
 from dotenv import load_dotenv
+import os
 
-# Load .env variables
+# Load environment variables (make sure your .env file contains GEMINI_API_KEY)
 load_dotenv()
 
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_PASS = os.getenv("DB_PASS")
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    raise ValueError("GEMINI_API_KEY not found in .env file.")
 
-def get_connection():
-    return psycopg2.connect(
-        host=DB_HOST,
-        port=DB_PORT,
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASS
-    )
+# Configure the Gemini SDK
+genai.configure(api_key=api_key)
 
-def list_documents():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT doc_hash, source_url, metadata FROM documents;")
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+# List available models
+models = genai.list_models()
 
-    for i, (doc_hash, source_url, metadata) in enumerate(rows):
-        print(f"\n📄 Document {i+1}:")
-        print(f"Doc Hash: {doc_hash}")
-        print(f"Source URL: {source_url}")
-        print(f"Chunks: {len(metadata)}")
-        print("First Chunk Preview:", json.dumps(metadata[2], indent=2) if metadata else "No chunks stored.")
-
-if __name__ == "__main__":
-    list_documents()
+print("🧠 Available Gemini Models with your API key:\n")
+for model in models:
+    model_info = f"""
+Name: {model.name}
+Version: {model.version if hasattr(model, 'version') else 'N/A'}
+Generation Methods: {model.supported_generation_methods}
+Input Token Limit: {getattr(model, 'input_token_limit', 'N/A')}
+Output Token Limit: {getattr(model, 'output_token_limit', 'N/A')}
+    """.strip()
+    print(model_info)
+    print("-" * 60)
