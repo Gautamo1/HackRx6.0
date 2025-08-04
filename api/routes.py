@@ -150,14 +150,12 @@
 #     print(f"\n⏱ Total time taken: {time.time() - overall_start:.2f} seconds")
 
 #     return HackRxResponse(answers=answers)
-
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import List
 import faiss
 import numpy as np
-import time
-import asyncio  # ✅ For parallel Gemini calls
+import asyncio
 
 from utils.auth import verify_token
 from utils.downloader import download_file_from_url
@@ -166,7 +164,7 @@ from utils.chunker import chunk_text
 from utils.embedder import get_embeddings_for_chunks
 from utils.file_store import save_faiss_index_and_metadata_to_db, load_faiss_index_and_metadata_from_db
 from utils.searcher import semantic_search_in_memory
-from utils.gemini_llm import answer_question  # ✅ now async
+from utils.gemini_llm import answer_question
 from utils.utils import get_file_hash
 from utils.db_utils import init_db, get_document_by_hash
 
@@ -181,61 +179,25 @@ class HackRxResponse(BaseModel):
     answers: List[str]
 
 @router.post("/run", response_model=HackRxResponse, dependencies=[Depends(verify_token)])
-async def run_endpoint(payload: HackRxInput):  # ✅ async
-    overall_start = time.time()
-
-    t0 = time.time()
+async def run_endpoint(payload: HackRxInput):
     file_path = download_file_from_url(payload.documents)
-    print(f"📥 Downloaded file in {time.time() - t0:.2f} seconds")
-
-    t0 = time.time()
     doc_hash = get_file_hash(file_path)
-    print(f"🔑 Generated hash in {time.time() - t0:.2f} seconds")
-
-    t0 = time.time()
     doc_record = get_document_by_hash(doc_hash)
-    print(f"📦 Checked cache in {time.time() - t0:.2f} seconds")
 
     if doc_record and doc_record.get("faiss_index") and doc_record.get("metadata"):
-        t0 = time.time()
         index, chunks = load_faiss_index_and_metadata_from_db(doc_hash)
-        print(f"📚 Loaded FAISS index + metadata from DB in {time.time() - t0:.2f} seconds")
     else:
-        t0 = time.time()
         text = parse_file(file_path)
-        print(f"📄 Parsed document in {time.time() - t0:.2f} seconds")
-
-        t0 = time.time()
         chunks = chunk_text(text)
-        print(f"✂️ Chunked document in {time.time() - t0:.2f} seconds")
-
-        t0 = time.time()
         embeddings = get_embeddings_for_chunks(chunks)
-        print(f"🧠 Embedded {len(chunks)} chunks in {time.time() - t0:.2f} seconds")
-
-        t0 = time.time()
         index = faiss.IndexFlatL2(len(embeddings[0]))
         index.add(np.array(embeddings, dtype=np.float32))
-        print(f"📊 Built FAISS index in {time.time() - t0:.2f} seconds")
-
-        t0 = time.time()
         save_faiss_index_and_metadata_to_db(doc_hash, payload.documents, index, chunks)
-        print(f"💾 Saved index + metadata to DB in {time.time() - t0:.2f} seconds")
 
-    # ✅ Parallel QA
-    async def process_question(i: int, question: str):
-        print(f"\n🔎 Question {i+1}: {question}")
-        t0 = time.time()
+    async def process_question(question: str):
         top_chunks = semantic_search_in_memory(question, index, chunks)
-        print(f"📌 Retrieved top chunks in {time.time() - t0:.2f} seconds")
+        return await answer_question(question, top_chunks)
 
-        t0 = time.time()
-        answer = await answer_question(question, top_chunks)
-        print(f"📝 Generated answer in {time.time() - t0:.2f} seconds")
-        return answer
-
-    tasks = [process_question(i, q) for i, q in enumerate(payload.questions)]
-    answers = await asyncio.gather(*tasks)  # ✅ Concurrent Gemini calls
-
-    print(f"\n⏱ Total time taken: {time.time() - overall_start:.2f} seconds")
+    tasks = [process_question(q) for q in payload.questions]
+    answers = await asyncio.gather(*tasks)
     return HackRxResponse(answers=answers)
