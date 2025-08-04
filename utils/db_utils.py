@@ -189,30 +189,92 @@
 #     return result
 
 
+# import os
+# import psycopg2
+# import pickle
+# import json
+# from psycopg2.extras import RealDictCursor
+# from dotenv import load_dotenv
+# from urllib.parse import urlparse
+
+# load_dotenv()
+
+# def get_connection():
+#     db_url = os.getenv("DATABASE_URL")
+#     if db_url:
+#         return psycopg2.connect(db_url)
+#     else:
+#         return psycopg2.connect(
+#             host=os.getenv("DB_HOST"),
+#             port=os.getenv("DB_PORT"),
+#             dbname=os.getenv("DB_NAME"),
+#             user=os.getenv("DB_USER"),
+#             password=os.getenv("DB_PASS")
+#         )
+
+# def init_db():
+#     with get_connection() as conn:
+#         with conn.cursor() as cur:
+#             cur.execute("""
+#                 CREATE TABLE IF NOT EXISTS documents (
+#                     doc_hash TEXT PRIMARY KEY,
+#                     source_url TEXT,
+#                     faiss_index BYTEA,
+#                     metadata JSONB,
+#                     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+#                 );
+#             """)
+#             conn.commit()
+
+# def insert_document(doc_hash, source_url, faiss_index_obj, metadata_obj):
+#     faiss_bytes = pickle.dumps(faiss_index_obj)
+#     metadata_json = json.dumps(metadata_obj)
+
+#     with get_connection() as conn:
+#         with conn.cursor() as cur:
+#             cur.execute("""
+#                 INSERT INTO documents (doc_hash, source_url, faiss_index, metadata)
+#                 VALUES (%s, %s, %s, %s)
+#                 ON CONFLICT (doc_hash) DO NOTHING;
+#             """, (doc_hash, source_url, faiss_bytes, metadata_json))
+#             conn.commit()
+
+# def get_document_by_hash(doc_hash):
+#     with get_connection() as conn:
+#         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+#             cur.execute("SELECT * FROM documents WHERE doc_hash = %s;", (doc_hash,))
+#             result = cur.fetchone()
+
+#     if result and result.get("faiss_index"):
+#         result["faiss_index"] = pickle.loads(result["faiss_index"])
+#     return result
+
+
 import os
-import psycopg2
-import pickle
 import json
-from psycopg2.extras import RealDictCursor
+import pickle
+import psycopg2
 from dotenv import load_dotenv
-from urllib.parse import urlparse
+from psycopg2.extras import RealDictCursor
+from typing import Optional, Any, Dict
 
 load_dotenv()
 
 def get_connection():
+    """Establish a PostgreSQL database connection."""
     db_url = os.getenv("DATABASE_URL")
     if db_url:
         return psycopg2.connect(db_url)
-    else:
-        return psycopg2.connect(
-            host=os.getenv("DB_HOST"),
-            port=os.getenv("DB_PORT"),
-            dbname=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASS")
-        )
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        dbname=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASS"),
+    )
 
 def init_db():
+    """Create the documents table if it doesn't exist."""
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -226,7 +288,8 @@ def init_db():
             """)
             conn.commit()
 
-def insert_document(doc_hash, source_url, faiss_index_obj, metadata_obj):
+def insert_document(doc_hash: str, source_url: str, faiss_index_obj: Any, metadata_obj: Any) -> None:
+    """Insert a new document record if not already present."""
     faiss_bytes = pickle.dumps(faiss_index_obj)
     metadata_json = json.dumps(metadata_obj)
 
@@ -239,7 +302,8 @@ def insert_document(doc_hash, source_url, faiss_index_obj, metadata_obj):
             """, (doc_hash, source_url, faiss_bytes, metadata_json))
             conn.commit()
 
-def get_document_by_hash(doc_hash):
+def get_document_by_hash(doc_hash: str) -> Optional[Dict]:
+    """Retrieve a document record by its hash."""
     with get_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM documents WHERE doc_hash = %s;", (doc_hash,))
