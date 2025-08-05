@@ -132,9 +132,6 @@ import re
 import google.generativeai as genai
 from dotenv import load_dotenv
 
-
-MODEL = "gemini-2.5-flash"
-model = genai.GenerativeModel(MODEL)
 # Load environment variables
 dotenv_path = 'C:/Users/kumar/OneDrive/Desktop/query_retrieval_system/.env'
 load_dotenv(dotenv_path=dotenv_path)
@@ -172,6 +169,10 @@ Context:
 
 Q: {query}
 """.strip()
+    
+    MODEL = "gemini-2.5-flash"
+    model = genai.GenerativeModel(MODEL)
 
     response = await model.generate_content_async(prompt)
     return response.text.strip()
+
