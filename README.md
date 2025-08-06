@@ -72,10 +72,7 @@ All endpoints require a Bearer token:
 Authorization: Bearer <your_token>
 ```
 
-Default fallback token (if not set):
-`Bearer 0bb47e221b4a0fcd07e75742ec888026ed66cdf92f4caa4a3e7c3cd50237d896`
 
----
 
 ## 🔍 API: `/hackrx/run`
 
@@ -154,5 +151,5 @@ https://web-production-609b0.up.railway.app/hackrx/run
 ## 🙋 About Me
 
 * **Name:** Gautam
-* **Email:** [your.kumargautam802108@gmail.com]
+* **Email:** [kumargautam802108@gmail.com]
 * **GitHub:** [github.com/Gautamo1]
