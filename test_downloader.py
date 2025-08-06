@@ -29,7 +29,7 @@ payload = {
 }
 
 # Number of requests to send
-num_requests = 3
+num_requests = 5
 timeout_seconds = 90
 
 for i in range(num_requests):

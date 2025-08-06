@@ -158,7 +158,7 @@ def clean_and_parse_response(response_text: str) -> dict:
 async def answer_question(query: str, context_chunks: list) -> str:
     context = "\n".join(
         chunk.get("text") or chunk.get("content") or chunk.get("chunk") or ""
-        for chunk in context_chunks[:3]
+        for chunk in context_chunks[:2]
     )
 
     prompt = f"""
@@ -170,7 +170,7 @@ Context:
 Q: {query}
 """.strip()
     
-    MODEL = "gemini-2.5-flash"
+    MODEL = "gemini-2.0-flash-lite"
     model = genai.GenerativeModel(MODEL)
 
     response = await model.generate_content_async(prompt)

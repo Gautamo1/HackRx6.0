@@ -149,7 +149,7 @@ init_db()
 # ⏱ Global lock and rate-limiting state
 last_request_time = 0
 cooldown_lock = asyncio.Lock()
-COOLDOWN_SECONDS = 59  # Change if needed
+COOLDOWN_SECONDS = 30  # Change if needed
 
 class HackRxInput(BaseModel):
     documents: str
