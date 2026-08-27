@@ -59,6 +59,10 @@
 
 import os
 import hashlib
+from email import policy
+from email.parser import BytesParser
+from email.header import decode_header, make_header
+from html.parser import HTMLParser
 import pdfplumber
 import mammoth
 from concurrent.futures import ThreadPoolExecutor
@@ -93,6 +97,46 @@ def parse_docx(path: str) -> str:
         result = mammoth.extract_raw_text(docx_file)
     return result.value.strip()
 
+
+class _HTMLTextParser(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.parts = []
+
+    def handle_data(self, data):
+        if data.strip():
+            self.parts.append(data.strip())
+
+
+def parse_email(path: str) -> str:
+    """Extract the subject and text body from an email file."""
+    with open(path, "rb") as email_file:
+        message = BytesParser(policy=policy.default).parse(email_file)
+
+    subject = str(make_header(decode_header(message.get("subject", "")))).strip()
+    plain_body = ""
+    html_body = ""
+
+    parts = message.walk() if message.is_multipart() else [message]
+    for part in parts:
+        if part.get_content_maintype() == "multipart":
+            continue
+        content_type = part.get_content_type()
+        try:
+            content = part.get_content()
+        except (LookupError, UnicodeDecodeError):
+            content = part.get_payload(decode=True) or b""
+            content = content.decode(part.get_content_charset() or "utf-8", errors="replace")
+        if content_type == "text/plain" and not plain_body:
+            plain_body = content.strip()
+        elif content_type == "text/html" and not html_body:
+            parser = _HTMLTextParser()
+            parser.feed(content)
+            html_body = " ".join(parser.parts).strip()
+
+    body = plain_body or html_body
+    return "\n".join(part for part in (subject, body) if part).strip()
+
 def parse_file(path: str) -> str:
     """
     Parse a file and return its text content. Uses SHA-based caching.
@@ -100,6 +144,7 @@ def parse_file(path: str) -> str:
     Supported formats:
     - PDF
     - DOCX
+    - EML
     """
     file_hash = get_file_hash(path)
     cache_path = os.path.join(CACHE_DIR, f"{file_hash}.txt")
@@ -114,8 +159,10 @@ def parse_file(path: str) -> str:
         parsed_text = parse_pdf(path)
     elif path.lower().endswith(".docx"):
         parsed_text = parse_docx(path)
+    elif path.lower().endswith(".eml"):
+        parsed_text = parse_email(path)
     else:
-        raise ValueError(f"Unsupported file type: {path}. Only PDF and DOCX are supported.")
+        raise ValueError(f"Unsupported file type: {path}. Only PDF, DOCX, and EML are supported.")
 
     # Save to cache
     with open(cache_path, "w", encoding="utf-8") as f:
