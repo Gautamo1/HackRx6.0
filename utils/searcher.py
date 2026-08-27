@@ -71,6 +71,39 @@ import numpy as np
 from utils.embedder import get_embedding
 from typing import List, Dict
 
+try:
+    from sentence_transformers import CrossEncoder
+except Exception:
+    CrossEncoder = None
+
+_RERANKER = None
+_RERANKER_LOAD_FAILED = False
+
+
+def _chunk_text(chunk) -> str:
+    if isinstance(chunk, dict):
+        return chunk.get("text") or chunk.get("content") or chunk.get("chunk") or ""
+    return str(chunk)
+
+
+def rerank_results(query: str, results: List[Dict], top_k: int = 3) -> List[Dict]:
+    """Rerank search results, falling back to their original order if unavailable."""
+    global _RERANKER, _RERANKER_LOAD_FAILED
+
+    if not results or CrossEncoder is None or _RERANKER_LOAD_FAILED:
+        return results[:top_k]
+
+    try:
+        if _RERANKER is None:
+            _RERANKER = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        pairs = [(query, _chunk_text(result["chunk"])) for result in results]
+        scores = _RERANKER.predict(pairs)
+        reranked = sorted(zip(results, scores), key=lambda item: float(item[1]), reverse=True)
+        return [result for result, _ in reranked[:top_k]]
+    except Exception:
+        _RERANKER_LOAD_FAILED = True
+        return results[:top_k]
+
 
 def semantic_search_in_memory(query: str, index: faiss.Index, chunks: List[dict], top_k: int = 5) -> List[Dict]:
     """
@@ -96,4 +129,4 @@ def semantic_search_in_memory(query: str, index: faiss.Index, chunks: List[dict]
                 "score": float(score)
             })
 
-    return results
+    return rerank_results(query, results, top_k=min(3, len(results)))
