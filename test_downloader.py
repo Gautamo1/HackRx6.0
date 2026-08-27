@@ -1,12 +1,17 @@
 import requests
 import time
+import os
 
 # Endpoint
 url = "http://127.0.0.1:8000/hackrx/run"
 
 # Bearer token
+API_TOKEN = os.getenv("API_TOKEN")
+if not API_TOKEN:
+    raise RuntimeError("API_TOKEN must be set to run the downloader test")
+
 headers = {
-    "Authorization": "Bearer REDACTED",
+    "Authorization": f"Bearer {API_TOKEN}",
     "Content-Type": "application/json",
     "Accept": "application/json"
 }

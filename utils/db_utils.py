@@ -9,7 +9,7 @@
 # DB_PORT = os.getenv("DB_PORT", "5432")
 # DB_NAME = os.getenv("DB_NAME", "Query")
 # DB_USER = os.getenv("DB_USER", "postgres")
-# DB_PASS = os.getenv("DB_PASS", "REDACTED")
+# DB_PASS = os.getenv("DB_PASS")
 
 # def get_connection():
 #     return psycopg2.connect(
@@ -69,7 +69,7 @@
 # DB_PORT = os.getenv("DB_PORT", "5432")
 # DB_NAME = os.getenv("DB_NAME", "Query")
 # DB_USER = os.getenv("DB_USER", "postgres")
-# DB_PASS = os.getenv("DB_PASS", "REDACTED")  # Use env var or .env for production!
+# DB_PASS = os.getenv("DB_PASS")  # Use an environment variable or .env for production!
 
 # def get_connection():
 #     return psycopg2.connect(
