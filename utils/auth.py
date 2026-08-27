@@ -6,7 +6,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 security = HTTPBearer()
-API_TOKEN = os.getenv("API_TOKEN", "REDACTED")
+API_TOKEN = os.getenv("API_TOKEN")
+if not API_TOKEN:
+    raise RuntimeError("API_TOKEN must be set in the environment before starting the application")
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
