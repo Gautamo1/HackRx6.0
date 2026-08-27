@@ -142,6 +142,7 @@ if not api_key:
     raise ValueError("GEMINI_API_KEY not found in .env file.")
 
 genai.configure(api_key=api_key)
+MODEL = "gemini-2.5-flash"
 
 
 def clean_and_parse_response(response_text: str) -> dict:
@@ -157,7 +158,8 @@ def clean_and_parse_response(response_text: str) -> dict:
     
 async def answer_question(query: str, context_chunks: list) -> str:
     context = "\n".join(
-        chunk.get("text") or chunk.get("content") or chunk.get("chunk") or ""
+        (chunk.get("text") or chunk.get("content") or chunk.get("chunk") or "")
+        if isinstance(chunk, dict) else str(chunk)
         for chunk in context_chunks[:2]
     )
 
@@ -170,7 +172,6 @@ Context:
 Q: {query}
 """.strip()
     
-    MODEL = "gemini-2.0-flash-lite"
     model = genai.GenerativeModel(MODEL)
 
     response = await model.generate_content_async(prompt)
